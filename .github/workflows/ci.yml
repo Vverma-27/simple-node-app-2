@@ -1,0 +1,36 @@
+name: CI - Build and Upload
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    name: Zip and Upload to S3
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install AWS CLI
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y awscli
+
+      - name: Zip the Application
+        run: |
+          VERSION=$(date +%Y-%m-%d-%H-%M-%S)
+          echo "ZIP_NAME=app-$VERSION.zip" >> $GITHUB_ENV
+          zip -r ${{ env.ZIP_NAME }} . -x "*.git*" ".github/*" "node_modules/*"
+
+      - name: Upload ZIP to S3
+        run: |
+          aws s3 cp ${{ env.ZIP_NAME }} s3://simple-node-app-bucket/${{ env.ZIP_NAME }}
+
+      - name: Save Artifact for CD
+        uses: actions/upload-artifact@v4
+        with:
+          name: latest-zip
+          path: ${{ env.ZIP_NAME }}

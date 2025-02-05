@@ -1,0 +1,39 @@
+name: CD - Deploy to Elastic Beanstalk
+
+on:
+  workflow_dispatch: # Manual trigger
+  workflow_run:
+    workflows: ["CI - Build and Upload"]
+    types:
+      - completed
+
+jobs:
+  deploy:
+    name: Deploy to AWS Elastic Beanstalk
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download ZIP from CI
+        uses: actions/download-artifact@v4
+        with:
+          name: latest-zip
+
+      - name: Install AWS CLI
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y awscli
+
+      - name: Deploy to Elastic Beanstalk
+        run: |
+          VERSION_LABEL="deploy-$(date +%Y-%m-%d-%H-%M-%S)"
+          S3_BUCKET="simple-node-app-bucket"
+          S3_KEY=$(ls *.zip)
+
+          aws elasticbeanstalk create-application-version \
+            --application-name "express-node-aws" \
+            --version-label "$VERSION_LABEL" \
+            --source-bundle S3Bucket=$S3_BUCKET,S3Key=$S3_KEY
+
+          aws elasticbeanstalk update-environment \
+            --environment-name "express-node" \
+            --version-label "$VERSION_LABEL"
