@@ -1,0 +1,52 @@
+name: Deploy to AWS Elastic Beanstalk
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    name: Deploy to AWS Elastic Beanstalk
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Zip the Application
+        run: |
+          zip -r app.zip . -x "*.git*" ".github/*" "node_modules/*"
+
+      - name: Upload ZIP to S3
+        run: |
+          TIMESTAMP=$(date +%Y-%m-%d-%H-%M-%S)
+          S3_BUCKET="simple-node-app-bucket"
+          S3_KEY="app-$TIMESTAMP.zip"
+
+          aws s3 cp app.zip s3://$S3_BUCKET/$S3_KEY
+
+          echo "S3_KEY=$S3_KEY" >> $GITHUB_ENV
+
+      - name: Create New Elastic Beanstalk Application Version
+        run: |
+          VERSION_LABEL="deploy-$(date +%Y-%m-%d-%H-%M-%S)"
+          aws elasticbeanstalk create-application-version \
+            --application-name "express-node-aws" \
+            --version-label "$VERSION_LABEL" \
+            --source-bundle S3Bucket="simple-node-app-bucket",S3Key="$S3_KEY"
+
+          echo "VERSION_LABEL=$VERSION_LABEL" >> $GITHUB_ENV
+
+      - name: Deploy New Version to Elastic Beanstalk
+        run: |
+          aws elasticbeanstalk update-environment \
+            --environment-name "express-node" \
+            --version-label "$VERSION_LABEL"
