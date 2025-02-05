@@ -3,7 +3,7 @@ const app = express();
 const port = process.env.PORT || 8081;
 
 app.get('/', (req, res) => {
-    res.send('Hello AWS Elastic Beanstalk with Docker!');
+    res.send('Hello AWS Elastic Beanstalk with Nodejs!');
 });
 
 app.listen(port, () => {
