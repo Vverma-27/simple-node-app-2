@@ -1,4 +1,4 @@
-name: Deploy to AWS Elastic Beanstalk
+name: CI - Deploy to AWS S3
 
 on:
   push:
@@ -6,8 +6,8 @@ on:
       - master
 
 jobs:
-  deploy:
-    name: Deploy to AWS Elastic Beanstalk
+  ci:
+    name: CI - Zip and Upload to S3
     runs-on: ubuntu-latest
 
     steps:
@@ -34,19 +34,3 @@ jobs:
           aws s3 cp app.zip s3://$S3_BUCKET/$S3_KEY
 
           echo "S3_KEY=$S3_KEY" >> $GITHUB_ENV
-
-      - name: Create New Elastic Beanstalk Application Version
-        run: |
-          VERSION_LABEL="deploy-$(date +%Y-%m-%d-%H-%M-%S)"
-          aws elasticbeanstalk create-application-version \
-            --application-name "express-node-aws" \
-            --version-label "$VERSION_LABEL" \
-            --source-bundle S3Bucket="simple-node-app-bucket",S3Key="$S3_KEY"
-
-          echo "VERSION_LABEL=$VERSION_LABEL" >> $GITHUB_ENV
-
-      - name: Deploy New Version to Elastic Beanstalk
-        run: |
-          aws elasticbeanstalk update-environment \
-            --environment-name "express-node" \
-            --version-label "$VERSION_LABEL"
