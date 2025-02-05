@@ -34,3 +34,10 @@ jobs:
           aws s3 cp app.zip s3://$S3_BUCKET/$S3_KEY
 
           echo "S3_KEY=$S3_KEY" >> $GITHUB_ENV
+
+      - name: Set S3_KEY as Output
+        id: output
+        run: echo "::set-output name=S3_KEY::$S3_KEY"
+
+    outputs:
+      s3_key: ${{ steps.output.outputs.S3_KEY }}
